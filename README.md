@@ -1,1 +1,1 @@
-# neurons
+# Brain-Inspired Computing: Neuron Simulator### Sakib Jalal, Fall 2017In this simulation, I have implemented three neuron models which generateplots describing the spiking behaviors of neurons under varying input currents.- Leaky Integrate-and-Fire- Izhikevich- Hodgkin-HuxleySimply run `python simulator.py` to execute the script.Depends on `scipy` and `matplotlib`.
