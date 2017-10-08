@@ -2,8 +2,9 @@
 import abc
 from math import exp
 import scipy as sp
+from scipy.integrate import odeint
 
-TIME_STEPS = 250
+TIME_STEPS = 400
 SPIKE_MULTIPLIER = 2.5
 IZHIKEVICH_SPIKE = 30 # 30 mV
 HH_SPIKE = 30 # 30 mV
@@ -15,7 +16,7 @@ class Wave:
         self.values = []
         assert cardinality > 0
         self.cardinality = cardinality
-        self.time_axis = [i for i in range(TIME_STEPS)]
+        self.time_axis = sp.array([i for i in range(TIME_STEPS)])
 
     def append(self, new_value):
         """ Add value to end of the series """
@@ -77,7 +78,7 @@ class LIF(Neuron):
 
 class Izhikevich(Neuron):
     """ Implementation of Izhikevich neuron model """
-    def __init__(self, p_u, params):
+    def __init__(self, p_u, params, time_steps):
         Neuron.__init__(self)
         p_a, p_b, p_c, p_d = params
         self.voltage = p_c
@@ -86,6 +87,7 @@ class Izhikevich(Neuron):
         self.p_b = p_b
         self.p_c = p_c
         self.p_d = p_d
+        self.wave = Wave(time_steps)
         self.wave.append(p_c)
 
     def time_step(self, current):
@@ -104,60 +106,33 @@ class Izhikevich(Neuron):
 
 class HodgkinHuxley(Neuron):
     """ Implementation of Hodgkin-Huxley neuron model """
-    def __init__(self, hh_cap, hh_g, hh_E, hh_opts, init_v):
+    def __init__(self, IC):
         Neuron.__init__(self)
-        self.voltage = init_v
-        self.C_m = hh_cap
-        self.p_g = hh_g
-        self.p_e = hh_E
-        self.opts = hh_opts
-        self.wave.append(init_v)
+        self.IC = IC # initial conditions
+        self.a, self.b, self.I = {}, {}, {} # alphas, betas, currents
+        self.a['h'] = lambda V: 0.07*exp(-(V+65)/20)
+        self.a['m'] = lambda V: 0.1*(V+40)/(1 - exp(-(V+40)/10))
+        self.a['n'] = lambda V: 0.01*(V+55)/(1 - exp(-(V+55)/10))
+        self.b['h'] = lambda V: 1/(1 + exp(-(V+35)/10))
+        self.b['m'] = lambda V: 4*exp(-(V+65)/18)
+        self.b['n'] = lambda V: 0.125*exp(-(V+65)/80)
+        self.I['Na'] = lambda V, m, h, p: IC['g_Na'] * m**3 * (1-p)*h * (V - IC['E_Na'])
+        self.I['K'] = lambda V, n:     IC['g_K']  * n**4     * (V - IC['E_K'])
+        self.I['L'] = lambda V:        IC['g_L']             * (V - IC['E_L'])
 
-    def time_step(self, current):
-        a = self.get_alphas()
-        b = self.get_betas()
-        I = self.get_currents()
+    def all_time_steps(self, current, ttx_ratio=0, pronase_ratio=0):
+        a, b, I, IC = self.a, self.b, self.I, self.IC
+        def ODEs(variables, times):
+            V, h, m, n = variables
+            dVdt = (current(times) - (1-ttx_ratio)*(I['Na'](V, m, h, pronase_ratio)) - I['K'](V, n) - I['L'](V)) / IC['C_m']
+            dhdt = a['h'](V)*(1-h) - b['h'](V)*h
+            dmdt = a['m'](V)*(1-m) - b['m'](V)*m
+            dndt = a['n'](V)*(1-n) - b['n'](V)*n
+            return dVdt, dhdt, dmdt, dndt
 
-        h, m, n = self.opts['h'], self.opts['m'], self.opts['n']
-        self.voltage += (current - I['Na'] - I['K'] - I['L']) / self.C_m
-        self.opts['h'] += a['h']*(1-h) - b['h']*h
-        self.opts['m'] += a['m']*(1-m) - b['m']*m
-        self.opts['n'] += a['n']*(1-n) - b['n']*n
-
-        self.wave.append(self.voltage)
-        print(self.voltage)
-
-    def get_alphas(self):
-        """ Get alpha parameters """
-        alphas = {}
-        V = self.voltage
-        alphas['h'] = 0.07*exp(-(V+65)/20)
-        alphas['m'] = 0.1*(V+40)/(1 - exp(-(V+40)/10))
-        alphas['n'] = 0.01*(V+55)/(1 - exp(-(V+55)/10))
-        return alphas
-
-    def get_betas(self):
-        """ Get beta parameters """
-        betas = {}
-        V = self.voltage
-        betas['h'] = 1/(1 + exp(-(V+35)/10))
-        betas['m'] = 4*exp(-(V+65)/18)
-        betas['n'] = 0.125*exp(-(V+65)/80)
-        return betas
-
-    def get_currents(self):
-        """ Get membrane currents """
-        currents = {}
-        V = self.voltage
-        h, m, n = self.opts['h'], self.opts['m'], self.opts['n']
-        g_Na, g_K, g_L = self.p_g['Na'], self.p_g['K'], self.p_g['L']
-        E_Na, E_K, E_L = self.p_e['Na'], self.p_e['K'], self.p_e['L']
-        currents['Na'] = g_Na * m**3 * h * (V - E_Na)
-        currents['K'] =  g_K  * n**4     * (V - E_K)
-        currents['L'] =  g_L             * (V - E_L)
-        print(h, m, n)
-        print(currents)
-        return currents
+        X = odeint(ODEs, [IC['V'], IC['h'], IC['m'], IC['n']], self.wave.time_axis)
+        for voltage in X[:,0]:
+            self.wave.append(voltage)
 
     def add_plot(self, plt, color=None):
         self.wave.add_plot(plt, color)
