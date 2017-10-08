@@ -1,7 +1,7 @@
 """ Neuron Simulator """
 #from neurons import LIF, Izhikevich, HodgkinHuxley
 from neurons import HodgkinHuxley
-from neurons import IZHIKEVICH_SPIKE, SPIKE_MULTIPLIER, TIME_STEPS
+from neurons import TIME_STEPS#, IZHIKEVICH_SPIKE, SPIKE_MULTIPLIER
 import matplotlib.pyplot as plt
 #from matplotlib.ticker import NullFormatter
 
@@ -93,15 +93,16 @@ plt.show()
 """
 # Problem 4
 plt.figure(4)
-HH_G = {'Na': 5, 'K': 6, 'L': 7}
-HH_V = {'Na': 5, 'K': 6, 'L': 7}
-HH_OPTS = {'h': 10, 'm': 20, 'n': 30}
-HH_CAPACITANCE = 10
+HH_G = {'Na': 120, 'K': 36, 'L': 0.3}
+HH_E = {'Na': 50, 'K': -77, 'L': -54.387}
+HH_OPTS = {'h': 0.6, 'm': 0.05, 'n': 0.32}
+HH_CAPACITANCE = 1.0
+INITIAL_VOLTAGE = -65
 CURRENTS = []
 for x in range(0, 100, 10):
     CURRENTS.append(x)
 for i in range(0, len(CURRENTS)):
-    neuron = HodgkinHuxley(HH_CAPACITANCE, HH_OPTS, HH_G, HH_V)
+    neuron = HodgkinHuxley(HH_CAPACITANCE, HH_G, HH_E, HH_OPTS, INITIAL_VOLTAGE)
     current = CURRENTS[i]
     plt.subplot(5, 2, i+1)
     plt.title('Current: {}'.format(current))
