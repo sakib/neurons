@@ -5,7 +5,7 @@ from collections import defaultdict
 from itertools import tee, izip, product
 from neurons import LIF as Neuron
 
-CALIBRATION_INFO = False
+VERBOSE = False
 
 def pairwise(iterable):
     """ Function to obtain in-order tuples on a list.
@@ -42,8 +42,9 @@ class SNN(object):
                 corresponds to the number of neurons in that layer.
         """
         self.layers = [[Neuron() for i in range(n)] for n in n_layers]
-        self.synapses = [np.random.rand(len1, len2)*2-1
+        self.synapses = [np.random.rand(len1, len2) #*2-1
                          for len1, len2 in pairwise(n_layers)]
+
 
     def classify(self, problem, inputs):
         """For a specific problem, train + run the SNN til output neuron fires.
@@ -60,7 +61,10 @@ class SNN(object):
             # TODO: train_xor(inputs)
             return self.classify_xor(inputs)
 
+        self.reset() # reset spike times for all neurons
+
         return None
+
 
     def classify_xor(self, inputs):
         """Solve the XOR problem.
@@ -79,21 +83,30 @@ class SNN(object):
             TODO: Figure out how to train network to calibrate + output 0 or 1.
 
         """
-        time_threshold = 101
+        self.reset()
+        time_threshold = 100
+        output = self.layers[-1][0]
         inp_to_curr = defaultdict(int)
-        inp_to_curr[0] = self.calibrate_current(6)
-        inp_to_curr[1] = self.calibrate_current(3)
+        inp_to_curr[0] = self.calibrate_current(3)
+        inp_to_curr[1] = self.calibrate_current(1)
 
         for c_time in range(time_threshold):
+            if output.last_spike != -1:
+                return output.last_spike
+
             for i_c_layer in range(len(self.layers)):
                 for i_c_neuron in range(len(self.layers[i_c_layer])):
                     neuron = self.layers[i_c_layer][i_c_neuron]
-                    if neuron.last_spike == -1: # not yet spiked
-                        if i_c_layer == 0: curr = inp_to_curr[inputs[i_c_neuron]]
-                        else: curr = self.sum_epsps(c_time, i_c_layer, i_c_neuron)
-                        neuron.time_step(curr, c_time)
+                    if i_c_layer == 0: curr = inp_to_curr[inputs[i_c_neuron]]
+                    else: curr = self.sum_epsps(c_time, i_c_layer, i_c_neuron)
+                    neuron.time_step(curr, c_time)
+                    if VERBOSE:
+                        print('t: {}, l: {}, n: {}, sp: {}, c: {}, v: {}'
+                            .format(c_time, i_c_layer, i_c_neuron,
+                                    neuron.last_spike, curr, neuron.voltage))
 
-        return self.layers[-1][0].last_spike # output neuron ttfs
+            if VERBOSE: print('')
+
 
     def sum_epsps(self, c_time, i_c_layer, i_c_neuron):
         """Given active SNN and non-input neuron, obtain sum of input currents.
@@ -115,6 +128,7 @@ class SNN(object):
 
         """
         current = 0
+        const = self.calibrate_current((1+3)/2)
         c_layer = self.layers[i_c_layer]
         p_layer = self.layers[i_c_layer-1]
         c_synapses = self.synapses[i_c_layer-1]
@@ -123,7 +137,9 @@ class SNN(object):
             p_spike = p_neuron.last_spike
             if p_spike != -1: # ttfs exists
                 weight = c_synapses[i_p_neuron][i_c_neuron]
-                current += weight * 2**-(c_time-p_spike)
+                change = weight * const * 2**-(c_time-p_spike)
+                if VERBOSE: print('\tadding epsp to current: {}'.format(change))
+                current += change
         return current
 
 
@@ -147,12 +163,19 @@ class SNN(object):
                 return current/10
 
 
+    def reset(self):
+        """Reset time-to-first-spikes for every neuron in the network."""
+        for layer in self.layers:
+            for neuron in layer:
+                neuron.last_spike = -1
+
+
 if __name__ == '__main__':
     snn = SNN([2, 4, 1])
     problems = defaultdict()
     problems['XOR'] = [0, 1]
 
-    if CALIBRATION_INFO:
+    if VERBOSE:
         print('Neuron values:')
         pp(vars(Neuron()))
         print('')

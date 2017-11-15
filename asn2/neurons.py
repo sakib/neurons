@@ -40,10 +40,15 @@ class Neuron(object):
     @abc.abstractmethod
     def __init__(self):
         self.wave = Wave(TIME_STEPS)
+        self.last_spike = -1
 
     @abc.abstractmethod
     def time_step(self, current):
         """ Update voltage given a current at a time """
+        pass
+
+    @abc.abstractmethod
+    def reset_spike(self):
         pass
 
     @abc.abstractmethod
@@ -61,7 +66,6 @@ class LIF(Neuron):
         self.v_max = spike_voltage
         self.v_rest = rest_voltage
         self.wave.append(rest_voltage)
-        self.last_spike = -1
 
     def time_step(self, current, curr_time):
         self.voltage += current/self.cap
@@ -74,6 +78,9 @@ class LIF(Neuron):
         elif self.voltage < self.v_rest:
             self.voltage = self.v_rest
         self.wave.append(self.voltage)
+
+    def reset_spike(self):
+        self.last_spike = -1
 
     def add_plot(self, plt, color=None):
         self.wave.add_plot(plt, color)
@@ -102,6 +109,9 @@ class Izhikevich(Neuron):
         elif self.voltage < self.p_c:
             self.voltage = self.p_c
         self.wave.append(self.voltage)
+
+    def reset_spike(self):
+        self.last_spike = -1
 
     def add_plot(self, plt, color=None):
         self.wave.add_plot(plt, color)
@@ -135,6 +145,9 @@ class HodgkinHuxley(Neuron):
         X = odeint(ODEs, [IC['V'], IC['h'], IC['m'], IC['n']], self.wave.time_axis)
         for voltage in X[:,0]:
             self.wave.append(voltage)
+
+    def reset_spike(self):
+        self.last_spike = -1
 
     def add_plot(self, plt, color=None):
         self.wave.add_plot(plt, color)
