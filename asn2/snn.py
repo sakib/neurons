@@ -80,7 +80,7 @@ class SNN(object):
 
         """
         teacher = Neuron()
-        t_window, t_threshold = 5, 100
+        t_window, t_threshold = 5, 1000
         output = self.layers[-1][0] # output neuron
         all_inputs = map(lambda ttfs_pair: [self.calibrate_current(ttfs)
                 for ttfs in ttfs_pair], list(product(inp_maps, inp_maps)))
@@ -124,10 +124,10 @@ class SNN(object):
                     if pre_neuron.last_spike > max(-1, c_time - t_window): # pre spike
                         if post_neuron.last_spike > max(-1, c_time - t_window):
                             #print('both neurons spiked in this window. increase weight')
-                            c_synapse[r][c] += 1.0/self.learn_rate
-                        elif i_c_synapse != 0:
-                            #print('pre spiked, but post didnt. decrease weight')
-                            c_synapse[r][c] -= 1.0/self.learn_rate
+                            c_synapse[r][c] += (1-c_synapse[r][c])*1.0/self.learn_rate - 0.125*c_synapse[r][c]
+                        #elif i_c_synapse != 0:
+                        #    #print('pre spiked, but post didnt. decrease weight')
+                        #    c_synapse[r][c] -= 1.0/self.learn_rate
 
         # normalize weights by postsynaptic neuron
         for synapse in self.synapses:
@@ -265,7 +265,8 @@ class SNN(object):
 if __name__ == '__main__':
     snn = SNN([2, 4, 1])
     problems = defaultdict()
-    problems['XOR'] = [[0, 1], [1, 6], [11, 9]]
+    #problems['XOR'] = [[0, 1], [1, 6], [11, 9]]
+    problems['XOR'] = [[0, 1], [2, 5], [10, 8]]
 
     if VERBOSE:
         print('Neuron values:')

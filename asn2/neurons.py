@@ -58,7 +58,8 @@ class Neuron(object):
 
 class LIF(Neuron):
     """ Implementation of leaky integrate-and-fire neuron model """
-    def __init__(self, capacitance=2.5, resistance=2, spike_voltage=75, rest_voltage=10):
+    #def __init__(self, capacitance=2.5, resistance=2, spike_voltage=75, rest_voltage=10):
+    def __init__(self, capacitance=2.5, resistance=2.5, spike_voltage=10., rest_voltage=0.):
         Neuron.__init__(self)
         self.voltage = rest_voltage
         self.res = resistance
@@ -68,6 +69,7 @@ class LIF(Neuron):
         self.wave.append(rest_voltage)
 
     def time_step(self, current, curr_time):
+        #if current is None: current = 0
         self.voltage += current/self.cap
         self.voltage -= self.voltage/(self.cap*self.res)
         if self.voltage > self.v_max:
@@ -99,7 +101,7 @@ class Izhikevich(Neuron):
         self.wave = Wave(time_steps)
         self.wave.append(p_c)
 
-    def time_step(self, current):
+    def time_step(self, current=0):
         self.voltage += (0.04*(self.voltage**2) + 5*self.voltage + 140 - self.p_u + current)
         self.p_u += (self.p_a * (self.p_b*self.voltage - self.p_u))
         if self.voltage >= IZHIKEVICH_SPIKE:
