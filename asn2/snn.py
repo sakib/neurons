@@ -49,9 +49,15 @@ class SNN(object):
         """
         self.time_const = 3.
         self.learn_rate = 7.
+        self.excit_ratio = 2
         self.trained = defaultdict()
         self.layers = [[Neuron() for i in range(n)] for n in n_layers]
         self.synapses = [np.random.rand(len1, len2) for len1, len2 in pairwise(n_layers)]
+        # make half of hidden layer inhibitory
+        mid, hid_out = list(map(lambda l: l[len(self.layers)/2], [self.layers, self.synapses]))
+        for i in range(int(math.ceil(len(mid)/self.excit_ratio)), len(mid)):
+            mid[i].type = 'inhibitory' # invert inhib weights
+            for j in range(len(hid_out[i])): hid_out[i][j] *= -1
 
 
     def train(self, problem, inp_maps, out_maps):
@@ -89,52 +95,75 @@ class SNN(object):
             self.reset()
             print('\ntraining {} in the hyperbolic time chamber...'.format(input_currs))
             target_ttfs = out_maps[0] if input_currs[0] == input_currs[1] else out_maps[1]
+            #for x in range(2):
             for c_time in range(1, t_threshold):
-                print('the time is {}ms'.format(c_time))
-                if c_time % target_ttfs == 0:
-                    print('\tthe teacher spikes!')
-                    teacher.time_step(100000, c_time)
+                #print('the time is {}ms'.format(c_time))
                 for i_c_layer in range(len(self.layers)):
                     for i_c_neuron in range(len(self.layers[i_c_layer])):
                         neuron = self.layers[i_c_layer][i_c_neuron]
                         if i_c_layer == 0: curr = input_currs[i_c_neuron]
                         else: curr = self.sum_epsps(c_time, i_c_layer, i_c_neuron)
-                        if neuron is output: curr += 1000 if teacher.last_spike == c_time else -1000
+                        if neuron is output: curr += 1000 if c_time % target_ttfs == 0 else -1000
                         neuron.time_step(curr, c_time)
-                        if neuron is output and neuron.last_spike == c_time: print('\toutput spikes!')
-                        elif neuron.last_spike == c_time: print('\tlayer {} neuron {} spikes!'.format(i_c_layer, i_c_neuron))
-                if c_time % t_window == 0:
-                    print('the weights are being updated!')
+                        #if neuron is output and neuron.last_spike == c_time: print('\toutput spikes!')
+                        #elif neuron.last_spike == c_time: print('\tlayer {} neuron {} type {} spikes!'.format(i_c_layer, i_c_neuron, neuron.type))
+                if c_time % target_ttfs == 0:
                     self.update_weights(c_time, t_window)
-                    for synapse in self.synapses:
-                        for row in synapse: print('\t{}'.format(row))
+                    #print('the weights are being updated!')
+                    #for synapse in self.synapses:
+                    #    for row in synapse: print('\t{}'.format(row))
+                    break
+            #print('(0,0): {}'.format(self.classify_xor([0, 0], inp_maps, out_maps)))
+            #print('(0,1): {}'.format(self.classify_xor([0, 1], inp_maps, out_maps)))
+            #print('(1,0): {}'.format(self.classify_xor([1, 0], inp_maps, out_maps)))
+            #print('(1,1): {}'.format(self.classify_xor([1, 1], inp_maps, out_maps)))
 
         print('Trained!')
 
 
     def update_weights(self, c_time, t_window):
         """Update weights of all synapses in the SNN.
+
+        Args:
+            c_time (int): Current timestep in the SNN.
+            t_window (int): Length of the time window in the SNN to check for spikes in.
+
         """
+
+        ch = 0.2
+
+        def has_spiked(neuron, c_time=c_time, t_window=t_window):
+            return neuron.last_spike > max(-1, c_time - t_window)
+
         for i_c_synapse in range(len(self.synapses)):
             c_synapse = self.synapses[i_c_synapse]
             pre_layer, post_layer = self.layers[i_c_synapse:i_c_synapse+2]
             for post_neuron in post_layer:
                 for pre_neuron in pre_layer:
                     r, c = pre_layer.index(pre_neuron), post_layer.index(post_neuron)
-                    if pre_neuron.last_spike > max(-1, c_time - t_window): # pre spike
-                        if post_neuron.last_spike > max(-1, c_time - t_window):
-                            #print('both neurons spiked in this window. increase weight')
-                            c_synapse[r][c] += (1-c_synapse[r][c])*1.0/self.learn_rate - 0.125*c_synapse[r][c]
-                        #elif i_c_synapse != 0:
-                        #    #print('pre spiked, but post didnt. decrease weight')
-                        #    c_synapse[r][c] -= 1.0/self.learn_rate
+                    if pre_neuron.type == 'excitatory':
+                        if has_spiked(pre_neuron):
+                            delta = (1-c_synapse[r][c])*1.0/self.learn_rate - ch*c_synapse[r][c]
+                            if has_spiked(post_neuron): c_synapse[r][c] += delta # both spiked
+                            else: c_synapse[r][c] -= delta # pre spiked, post didn't
+                        else:
+                            c_synapse[r][c] -= ch*c_synapse[r][c]
+                    elif pre_neuron.type == 'inhibitory':
+                        if has_spiked(pre_neuron):
+                            delta = (1+c_synapse[r][c])*1.0/self.learn_rate - ch*c_synapse[r][c]
+                            if not has_spiked(post_neuron): c_synapse[r][c] -= delta # choke
+                            else: c_synapse[r][c] += delta # both spiked
+                        else:
+                            c_synapse[r][c] += ch*c_synapse[r][c]
 
-        # normalize weights by postsynaptic neuron
-        for synapse in self.synapses:
-            norm_sums = defaultdict(int)
-            for r in range(len(synapse)):
-                for c in range(len(synapse[r])):
-                    norm_sums[c] += synapse[r][c]
+            """# column normalization
+            col_sums = defaultdict(int)
+            for r in range(len(c_synapse)):
+                for c in range(len(c_synapse[r])):
+                    col_sums[c] += c_synapse[r][c]
+            for r in range(len(c_synapse)):
+                for c in range(len(c_synapse[r])):
+                    c_synapse[r][c] /= col_sums[c] """
 
 
     def classify(self, problem, inputs, inp_maps, out_maps):
@@ -174,12 +203,12 @@ class SNN(object):
             Currently, the time-to-first-spike of the output neuron.
 
         """
-        #TODO: Output 0 or 1.
+        t_window = 50
         inp_to_curr = {i : self.calibrate_current(inp_maps[i])
                        for i in range(len(inputs))}
 
-        #for c_time in range(max(out_maps)+1):
-        for c_time in range(1, 100):
+        for c_time in range(1, 1000):
+
             if self.layers[-1][0].last_spike != -1:
                 return self.layers[-1][0].last_spike
 
@@ -189,8 +218,8 @@ class SNN(object):
                     if i_c_layer == 0: curr = inp_to_curr[inputs[i_c_neuron]]
                     else: curr = self.sum_epsps(c_time, i_c_layer, i_c_neuron)
                     neuron.time_step(curr, c_time)
-                    if i_c_layer == 2 and neuron.last_spike == c_time: print('\toutput spikes!')
-                    elif neuron.last_spike == c_time: print('\ttime {}: layer {} neuron {} spikes!'.format(c_time, i_c_layer, i_c_neuron))
+                    #if i_c_layer == 2 and neuron.last_spike == c_time: print('\toutput spikes!')
+                    #elif neuron.last_spike == c_time: print('\ttime {}: layer {} neuron {} type {} spikes!'.format(c_time, i_c_layer, i_c_neuron, neuron.type))
                     if VERBOSE:
                         print('t: {}, l: {}, n: {}, sp: {}, c: {}, v: {}'
                             .format(c_time, i_c_layer, i_c_neuron,
@@ -220,7 +249,6 @@ class SNN(object):
         """
         current = 0
         const = Neuron().v_max
-        #const = 1
         c_layer = self.layers[i_c_layer]
         p_layer = self.layers[i_c_layer-1]
         c_synapses = self.synapses[i_c_layer-1]
@@ -263,26 +291,45 @@ class SNN(object):
 
 
 if __name__ == '__main__':
-    snn = SNN([2, 4, 1])
+    snn = SNN([2, 10, 1])
     problems = defaultdict()
-    #problems['XOR'] = [[0, 1], [1, 6], [11, 9]]
-    problems['XOR'] = [[0, 1], [2, 5], [10, 8]]
+    #problems['XOR'] = [[0, 1], [2, 5], [14, 10]]
+    problems['XOR'] = [[0, 1], [10, 15], [5, 8]]
 
     if VERBOSE:
         print('Neuron values:')
         pp(vars(Neuron()))
         print('')
 
-        for ttfs in range(1, 21, 1):
+        for ttfs in range(1, 8, 1):
             print('ttfs: {}, current: {}'.format(
                 ttfs, snn.calibrate_current(ttfs)))
 
+    """ temporal
     for name, vals in problems.items():
         inps, inp_maps, out_maps = vals
         print('\n{}\n{}'.format(name, '-'*len(name)))
-        print('Training...')
         snn.train(name, inp_maps, out_maps)
-        print('Classifying...')
-        for inp in list(product(inps, inps)): # all input pairs
-            print('{}: {}'.format(inp, snn.classify(name, inp, inp_maps, out_maps)))
-
+        for x in range(1000):
+            #print('Training...')
+            snn.train(name, inp_maps, out_maps)
+            #print('Classifying...')
+            expect_zero, expect_one = [], []
+            for inp in list(product(inps, inps)): # all input pairs
+                if inp[0] == inp[1]: expect_zero.append(snn.classify(name, inp, inp_maps, out_maps))
+                else: expect_one.append(snn.classify(name, inp, inp_maps, out_maps))
+            expect_zero = list(filter(lambda x: x != None, expect_zero))
+            expect_one = list(filter(lambda x: x != None, expect_one))
+            if len(expect_zero) == 2 and len(expect_one) == 2:
+                diff_zeros = abs(expect_zero[0]-expect_zero[1])
+                diff_ones = abs(expect_one[0]-expect_one[1])
+                diff_bw = 1000
+                for x in expect_zero:
+                    for y in expect_one:
+                        if diff_bw > abs(x-y):
+                            diff_bw = abs(x-y)
+                if diff_bw < diff_zeros or diff_bw < diff_ones:
+                    print('FAILURE (0,0): {}\t(0,1): {}\t(1,0): {}\t(1,1): {}'.format(expect_zero[0], expect_one[0], expect_one[1], expect_zero[1]))
+                else:
+                    print('SUCCESS (0,0): {}\t(0,1): {}\t(1,0): {}\t(1,1): {}'.format(expect_zero[0], expect_one[0], expect_one[1], expect_zero[1]))
+    """

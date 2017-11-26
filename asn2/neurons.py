@@ -59,8 +59,9 @@ class Neuron(object):
 class LIF(Neuron):
     """ Implementation of leaky integrate-and-fire neuron model """
     #def __init__(self, capacitance=2.5, resistance=2, spike_voltage=75, rest_voltage=10):
-    def __init__(self, capacitance=2.5, resistance=2.5, spike_voltage=10., rest_voltage=0.):
+    def __init__(self, capacitance=2.5, resistance=2.5, spike_voltage=10., rest_voltage=0., type='excitatory'):
         Neuron.__init__(self)
+        self.type = type
         self.voltage = rest_voltage
         self.res = resistance
         self.cap = capacitance
