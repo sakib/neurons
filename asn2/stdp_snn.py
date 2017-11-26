@@ -1,6 +1,7 @@
 """ Spiking Neural Network implementation """
 import math
 import numpy as np
+import matplotlib.pyplot as plt
 from random import uniform
 from pprint import pprint as pp
 from collections import defaultdict
@@ -24,17 +25,14 @@ class Synapse(object):
         self.weight = uniform(0, 1)
 
     def a(self, sign):
-        if sign == '+': return self.weight/3.
-        if sign == '-': return -self.weight/3.
+        if sign == '+': return self.weight/4.
+        if sign == '-': return -self.weight/4.
 
     def tau(self, sign): # > 1
-        #if sign == '+': return 4.
-        #if sign == '-': return 4.
-        if sign == '+': return 8.
-        if sign == '-': return 8.
+        if sign == '+': return 4.
+        if sign == '-': return 4.
 
     def dirac(self, neuron, c_time):
-        #return neuron.last_spike == c_time - 1
         return neuron.last_spike == c_time
 
     def update(self, c_time):
@@ -49,9 +47,9 @@ class Synapse(object):
 class SNN(object):
     def __init__(self, n_layers):
         s = self
-        s.time_const = 5. #3
-        s.learn_rate = 5. #7
-        s.excit_ratio = 2 #5
+        s.time_const = 3.
+        s.learn_rate = 7.
+        s.excit_ratio = 2
         s.trained = defaultdict()
         s.layers = [[Neuron(i_layer=i_layer, i_neuron=i_neuron)
                     for i_neuron in range(n_layers[i_layer])]
@@ -81,16 +79,15 @@ class SNN(object):
             self.trained[problem] = True
 
     def train_xor(self, inp_maps, out_maps):
-        n_runs = 20
+        n_runs = 4
         all_inputs = map(lambda ttfs_pair: [self.calibrate_current(ttfs)
                 for ttfs in ttfs_pair], list(product(inp_maps, inp_maps)))
 
-        for i_run in range(1, n_runs): # train this many times
-            for input_currs in all_inputs:
+        for input_currs in all_inputs:
+            for i_run in range(1, n_runs): # train this many times
                 self.reset() # is this needed?
                 target_ttfs = out_maps[0] if input_currs[0] == input_currs[1] else out_maps[1]
-                #print('\ntraining {} to output at timestep {}...'.format(input_currs, target_ttfs))
-                for time in range(1, (1+target_ttfs)*5):
+                for time in range(1, (1+target_ttfs)):
 
                     # update all neurons
                     for layer in self.layers:
@@ -100,8 +97,6 @@ class SNN(object):
                             if neuron.i_layer == 2: # teaching input
                                 current += 1000 if time % target_ttfs == 0 else -current
                             neuron.time_step(current, time)
-                            #if neuron.just_spiked(time): print('\ttime {}: l {} n {} type {} spikes!'.format(time, neuron.i_layer, neuron.i_neuron, neuron.type))
-                            #print('t: {}, l: {}, n: {}, sp: {}, c: {}, v: {}'.format(time, i_layer, i_c_neuron, neuron.last_spike, curr, neuron.voltage))
 
                     # update all weights
                     for synapse_layer in self.synapses:
@@ -109,16 +104,32 @@ class SNN(object):
                             for _post, synapse in _post_layer.items():
                                 synapse.update(time)
 
-                for synapse_layer in snn.synapses:
-                    for _pre, _post_synapses in synapse_layer.items():
-                        synapses = list(_post_synapses.values())
-                        weights = list(map(lambda syn: syn.weight, synapses))
-                        print('\t{}'.format(weights))
+                self.normalize_weights()
+                self.output_weights()
+
                 for inp in list(product([0,1], [0,1])): # all input pairs
                     print('{}: {}'.format(inp, snn.classify(name, inp, inp_maps, out_maps)))
                 print('')
 
         print('Trained!')
+
+    def normalize_weights(self):
+         col_sums = defaultdict(float)
+         for synapse_layer in snn.synapses:
+             for _pre, _post_synapses in synapse_layer.items():
+                 for _post, synapse in _post_synapses.items():
+                     col_sums[_post] += synapse.weight
+         for synapse_layer in snn.synapses:
+             for _pre, _post_synapses in synapse_layer.items():
+                 for _post, synapse in _post_synapses.items():
+                     col_sums[_post] += synapse.weight
+
+    def output_weights(self):
+        for synapse_layer in snn.synapses:
+            for _pre, _post_synapses in synapse_layer.items():
+                synapses = list(_post_synapses.values())
+                weights = list(map(lambda syn: syn.weight, synapses))
+                print('\t{}'.format(weights))
 
     def classify(self, problem, inputs, inp_maps, out_maps):
         self.reset()
@@ -136,8 +147,6 @@ class SNN(object):
                     current = inp_to_curr[inputs[neuron.i_neuron]] \
                         if neuron.i_layer == 0 else self.sum_epsps(time, neuron)
                     neuron.time_step(current, time)
-                    #if neuron.just_spiked(time): print('\ttime {}: layer {} neuron {} type {} spikes!'.format(time, neuron.i_layer, neuron.i_neuron, neuron.type))
-                    #print('t: {}, l: {}, n: {}, sp: {}, c: {}, v: {}'.format(time, i_layer, i_c_neuron, neuron.last_spike, curr, neuron.voltage))
             if output.has_spiked(): return output.last_spike
 
     def sum_epsps(self, time, neuron):
@@ -146,7 +155,6 @@ class SNN(object):
         for _pre in self.layers[prev]:
             if _pre.has_spiked():
                 ls, wt = _pre.last_spike, self.synapses[prev][_pre][neuron].weight
-                # if _pre.last_spike == time: ls = 0
                 if neuron.i_layer == 2 and _pre.type == 'inhibitory': wt *= -1
                 current += wt * Neuron().v_max * math.e**(-(time-ls)/self.time_const)
         return current
@@ -170,7 +178,8 @@ if __name__ == '__main__':
 
     snn = SNN([2, 10, 1])
     problems = defaultdict()
-    problems['XOR'] = [[0, 1], [6, 3], [10, 14]]
+    #problems['XOR'] = [[0, 1], [6, 3], [10, 14]]
+    problems['XOR'] = [[0, 1], [6, 3], [11, 8]]
 
     for name, vals in problems.items():
 
@@ -179,12 +188,11 @@ if __name__ == '__main__':
 
         print('Training...')
         snn.train(name, inp_maps, out_maps)
-        for synapse_layer in snn.synapses:
-            for _pre, _post_synapses in synapse_layer.items():
-                synapses = list(_post_synapses.values())
-                weights = list(map(lambda syn: syn.weight, synapses))
-                print('\t{}'.format(weights))
+        snn.output_weights()
 
         print('Classifying...')
         for inp in list(product(inps, inps)): # all input pairs
             print('{}: {}'.format(inp, snn.classify(name, inp, inp_maps, out_maps)))
+
+        snn.layers[-1][0].add_plot(plt)
+        plt.show()
