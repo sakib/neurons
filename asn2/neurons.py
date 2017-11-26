@@ -59,7 +59,7 @@ class Neuron(object):
 class LIF(Neuron):
     """ Implementation of leaky integrate-and-fire neuron model """
     #def __init__(self, capacitance=2.5, resistance=2, spike_voltage=75, rest_voltage=10):
-    def __init__(self, capacitance=2.5, resistance=2.5, spike_voltage=10., rest_voltage=0., type='excitatory'):
+    def __init__(self, capacitance=2.5, resistance=2, spike_voltage=75., rest_voltage=10., type='excitatory'):
         Neuron.__init__(self)
         self.type = type
         self.voltage = rest_voltage
@@ -67,10 +67,10 @@ class LIF(Neuron):
         self.cap = capacitance
         self.v_max = spike_voltage
         self.v_rest = rest_voltage
+        self.last_spike = -1
         self.wave.append(rest_voltage)
 
     def time_step(self, current, curr_time):
-        #if current is None: current = 0
         self.voltage += current/self.cap
         self.voltage -= self.voltage/(self.cap*self.res)
         if self.voltage > self.v_max:
@@ -78,9 +78,15 @@ class LIF(Neuron):
             self.voltage = self.v_rest
             self.wave.append(self.v_max*SPIKE_MULTIPLIER)
             self.wave.append(0)
+            self.wave.append(self.voltage)
+            return 1
         elif self.voltage < self.v_rest:
             self.voltage = self.v_rest
-        self.wave.append(self.voltage)
+            self.wave.append(self.voltage)
+        return 0
+
+    def get_last_spike(self):
+        return self.last_spike
 
     def reset_spike(self):
         self.last_spike = -1
