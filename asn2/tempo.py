@@ -10,7 +10,7 @@ from neurons import LIF as Neuron
 SMOL = 1. #2.5
 VALIDS = ['*']
 
-def image_to_switches(image, n_neurons):
+def image_to_windows(image, n_neurons):
     with open('lines/{}'.format(image), 'r') as img:
         chars = [list(line.strip()) for line in img]
 
@@ -26,12 +26,7 @@ def image_to_switches(image, n_neurons):
         for c in range(n_windows):
             windows.append([row[c:c+int(l_win)] for row in chars[r:r+int(l_win)]])
 
-    return map(lambda w: window_to_switch(w), windows)
-
-
-def window_to_switch(window, valids=VALIDS): # get boolean for on/off
-    # consider center of odd square window. could be fuzzy
-    return window[len(window)/2][len(window)/2] in valids
+    return windows
 
 
 class Tempotron(object):
@@ -61,10 +56,10 @@ class Tempotron(object):
         else: return self.lambduh * sum(psps) * 1./max(psps)
 
 
-    def train(self, image, trueImage):
+    def train(self, image, switch_fn, trueImage):
         s = self
         s.reset()
-        classified, t_max, v_max = s.classify(image)
+        classified, t_max, v_max = s.classify(image, switch_fn)
         weight_deltas = [s.weight_delta(neuron, t_max) for neuron in s.neurons]
         if not classified and trueImage: # increase all weights
             #print('increasing weights')
@@ -74,14 +69,15 @@ class Tempotron(object):
             s.synapses = [w-dw for w,dw in zip(s.synapses, weight_deltas)]
 
 
-    def classify(self, image, plot=None):
+    def classify(self, image, switch_fn, plot=None):
         s = self
         s.reset()
         t_max, v_max = 0, 0
         x_axis, y_axis = [], []
 
         # process input image
-        switches = image_to_switches(image, len(s.neurons))
+        windows = image_to_windows(image, len(s.neurons))
+        switches = map(switch_fn, windows)
         for time in range(s.t_threshold):
             for idx in range(len(s.neurons)):
                 if switches[idx]: # make neuron spike
@@ -155,22 +151,30 @@ if __name__ == '__main__':
     valid_angles = [0, 180]
     n_training_iters = 5
 
-    print('\n{}\n{}'.format(problem, '-'*len(problem)))
-    for angle in range(0, 360, 20): images[angle] = 'angle_{}'.format(angle)
+    switch_fns = defaultdict() # fns to convert window to bool
+    switch_fns['center'] = lambda w: w[len(w)/2][len(w)/2] in VALIDS
+    switch_fns['line'] = lambda w: all([c in VALIDS for c in w[len(w)/2]])
 
-    print('Training...')
-    for i in range(n_training_iters):
+    for name, switch_fn in switch_fns.items():
+        print('\n{}\n{}'.format(problem, '-'*len(problem)))
+        print('detection method: {}\n'.format(name))
         for angle in range(0, 360, 20):
-            tempotron.train(images[angle], angle in valid_angles)
+            images[angle] = 'angle_{}'.format(angle)
 
-    print('Weights...')
-    tempotron.print_synapses()
+        print('Training...')
+        for i in range(n_training_iters):
+            for angle in range(0, 360, 20):
+                tempotron.train(images[angle], switch_fn, angle in valid_angles)
 
-    # set valid threshold
-    classified, t_max, v_max = tempotron.classify(images[0], None)
-    tempotron.V_th = v_max
+        print('Weights...')
+        tempotron.print_synapses()
 
-    print('Classifying...'.format(v_max))
-    for angle in range(0, 360, 20): # yield ttfs
-        classified, t_max, v_max = tempotron.classify(images[angle], None)#, plt)
-        print('Angle {}:\t{}\t{}'.format(angle, classified, v_max))
+        # set valid threshold
+        classified, t_max, v_max = tempotron.classify(images[0], switch_fn, None)
+        tempotron.V_th = v_max
+
+        print('Classifying...'.format(v_max))
+        for angle in range(0, 360, 20): # yield ttfs
+            classified, t_max, v_max = tempotron.classify(images[angle], switch_fn, None)#, plt)
+            print('Angle {}:\t{}\t{}'.format(angle, classified, v_max))
+
