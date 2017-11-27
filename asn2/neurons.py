@@ -26,7 +26,7 @@ class Wave:
 
     def add_plot(self, plt, color=None):
         """ Display value series as curve """
-        x_values = sp.array(self.time_axis)
+        x_values = sp.array([i for i in range(len(self.values))])
         y_values = sp.array(self.values)
         if color is None:
             plt.plot(x_values, y_values)
@@ -59,8 +59,9 @@ class Neuron(object):
 class LIF(Neuron):
     """ Implementation of leaky integrate-and-fire neuron model """
     #def __init__(self, capacitance=2.5, resistance=2, spike_voltage=75., rest_voltage=0., type='excitatory', i_layer=-1, i_neuron=-1):
-    def __init__(self, capacitance=2.5, resistance=2, spike_voltage=20., rest_voltage=0., type='excitatory', i_layer=-1, i_neuron=-1):
+    def __init__(self, capacitance=2.5, resistance=2, spike_voltage=20., rest_voltage=5., type='excitatory', i_layer=-1, i_neuron=-1):
         Neuron.__init__(self)
+        self.spikes = []
         self.i_layer = i_layer
         self.i_neuron = i_neuron
         self.type = type
@@ -75,7 +76,9 @@ class LIF(Neuron):
     def time_step(self, current, curr_time):
         self.voltage += current/self.cap
         self.voltage -= self.voltage/(self.cap*self.res)
-        if self.voltage > self.v_max:
+        self.wave.append(min(self.voltage, self.v_max))
+        if self.voltage > self.v_max: # spike
+            self.spikes.append(curr_time)
             self.last_spike = curr_time
             self.voltage = self.v_rest
             self.wave.append(self.v_max*SPIKE_MULTIPLIER)
@@ -92,6 +95,10 @@ class LIF(Neuron):
 
     def reset_spike(self):
         self.last_spike = -1
+
+    def reset(self):
+        self.last_spike = -1
+        self.spikes = []
 
     def has_spiked(self):
         return not self.last_spike == -1

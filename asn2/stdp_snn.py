@@ -87,7 +87,7 @@ class SNN(object):
             for i_run in range(1, n_runs): # train this many times
                 self.reset() # is this needed?
                 target_ttfs = out_maps[0] if input_currs[0] == input_currs[1] else out_maps[1]
-                for time in range(1, (1+target_ttfs)):
+                for time in range(1, (1+target_ttfs)):#*2):
 
                     # update all neurons
                     for layer in self.layers:
@@ -96,6 +96,7 @@ class SNN(object):
                                 if neuron.i_layer == 0 else self.sum_epsps(time, neuron)
                             if neuron.i_layer == 2: # teaching input
                                 current += 1000 if time % target_ttfs == 0 else -current
+                            #if neuron.i_layer == 0 and time > target_ttfs: current = 0
                             neuron.time_step(current, time)
 
                     # update all weights
@@ -178,8 +179,8 @@ if __name__ == '__main__':
 
     snn = SNN([2, 10, 1])
     problems = defaultdict()
-    #problems['XOR'] = [[0, 1], [6, 3], [10, 14]]
     problems['XOR'] = [[0, 1], [6, 3], [11, 8]]
+    #problems['XOR'] = [[0, 1], [4, 1], [10, 15]]
 
     for name, vals in problems.items():
 
@@ -194,5 +195,5 @@ if __name__ == '__main__':
         for inp in list(product(inps, inps)): # all input pairs
             print('{}: {}'.format(inp, snn.classify(name, inp, inp_maps, out_maps)))
 
-        snn.layers[-1][0].add_plot(plt)
-        plt.show()
+        #snn.layers[-1][0].add_plot(plt)
+        #plt.show()
