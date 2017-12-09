@@ -20,14 +20,6 @@ class Tempo_Classifier:
         #get mnist data
         (self.x_train, self.y_train), (self.x_test, self.y_test) = mnist.load_data()
 
-        sum = 0
-        for i in range(len(self.x_train[0])):
-            for j in range(len(self.x_train[0][i])):
-                sum += self.x_train[0][i][j]
-
-        avg = sum/(28*28)
-
-        print avg
 
 if __name__ == '__main__':
 
