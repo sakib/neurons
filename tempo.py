@@ -31,17 +31,33 @@ def image_to_windows(image, n_neurons):
     return windows
 
 
+def matrix_to_windows(matrix, n_neurons):
+    windows = []
+    l_win = math.sqrt(n_neurons)
+    n_windows = 1 + len(matrix) - int(l_win)
+
+    if len(matrix) != len(matrix[0]): sys.exit('image must be square')
+    if l_win - int(l_win) != 0: sys.exit('perception must be square')
+    if n_windows <= 0: sys.exit('image must be larger than perception')
+
+    for r in range(n_windows):
+        for c in range(n_windows):
+            windows.append([row[c:c+int(l_win)] for row in matrix[r:r+int(l_win)]])
+
+    return windows
+
+
 class Tempotron(object):
     def __init__(self, n_inputs):
         s = self
         s.lambduh = .25     # learning rate
-        s.on_ttfs = 4       # ms when 'on' neurons should spike
-        s.t_threshold = 25  # time to wait for output to spike
+        s.on_ttfs = 3       # ms when 'on' neurons should spike
+        s.t_threshold = 50  # time to wait for output to spike
         s.V_rest, s.V_th = 0, n_inputs
         s.neurons = [Neuron(i_neuron=i) for i in range(n_inputs)]
 
         s.synapses = [random.uniform(-1, 1) for neuron in s.neurons]
-        while len(filter(lambda w: w < 0, s.synapses)) >= math.sqrt(n_inputs):
+        while len(list(filter(lambda w: w < 0, s.synapses))) >= math.sqrt(n_inputs):
             s.synapses = [random.uniform(-1, 1) for neuron in s.neurons] # limit inhibs
 
 
@@ -76,8 +92,8 @@ class Tempotron(object):
         x_axis, y_axis = [], []
 
         # process input image
-        windows = image_to_windows(image, len(s.neurons))
-        switches = map(switch_fn, windows)
+        windows = matrix_to_windows(image, len(s.neurons))
+        switches = list(map(switch_fn, windows))
         for time in range(s.t_threshold):
             for idx in range(len(s.neurons)):
                 if switches[idx]: # make neuron spike
