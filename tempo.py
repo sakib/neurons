@@ -156,6 +156,17 @@ class Tempotron(object):
             print(self.synapses[i:i+sqrt])
 
 
+    def window_to_valid(self, window):
+        #window is 2d array
+        for i in range(len(window)):
+            for j in window[i]:
+                sum += j
+
+        avg = sum/(len(window) * len(window[0]))
+
+        return avg >= 128
+
+"""
 if __name__ == '__main__':
 
     # setup problem
@@ -216,3 +227,4 @@ if __name__ == '__main__':
 
         print('\nTotal time to classify all inputs: {}ms\n'.format(
             round(1000*(time.time() - start_time)/(360/20), n_decimals=1)))
+"""
