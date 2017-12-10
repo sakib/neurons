@@ -1,26 +1,17 @@
-from tempo import Tempotron
-from keras.datasets import mnist
+from dataset import MNIST
+from digit_tempo import DigitTempotron
+#import matplotlib.pyplot as plt
 
-class Tempo_Classifier:
-    """
-    Attributes:
-        x_train, x_test: uint8 array of grayscale image data with shape (num_samples, 28, 28).
-        y_train, y_test: uint8 array of digit labels (integers in range 0-9) with shape (num_samples,).
-    """
+n_samples = 3
+training_digit = 0
+dataset = MNIST(n_components=25)
 
-    def __init__(self, num_classes, tempo_windows):
-        """
-        Parameters:
-            num_inputs: number of classifications
-            tempo_windows: number of windows per tempotron; used in tempo init
-        """
-        #list of tempotrons, each of which takes an input set
-        inputs = [Tempotron(tempo_windows) for i in range(num_classes)]
+print('training...')
+tempotron = DigitTempotron(dataset, training_digit)
+samples = {digit:dataset.sample(n_samples, digit) for digit in list(range(10))}
 
-        #get mnist data
-        (self.x_train, self.y_train), (self.x_test, self.y_test) = mnist.load_data()
-
-
-if __name__ == '__main__':
-
-    tc = Tempo_Classifier(5, 9)
+print('tempotron trained on {}...'.format(training_digit))
+for digit, images in samples.items():
+	for image in images:
+		truth, t_max, v_max = tempotron.classify(image)
+		print('{}:\t{}\t{}\t{}'.format(digit, truth, t_max, v_max))

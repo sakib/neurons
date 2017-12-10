@@ -52,7 +52,7 @@ class Tempotron(object):
         s = self
         s.lambduh = .25     # learning rate
         s.on_ttfs = 3       # ms when 'on' neurons should spike
-        s.t_threshold = 50  # time to wait for output to spike
+        s.t_threshold = 10  # time to wait for output to spike
         s.V_rest, s.V_th = 0, n_inputs
         s.neurons = [Neuron(i_neuron=i) for i in range(n_inputs)]
 
