@@ -37,7 +37,7 @@ def keras_model():
     model.add(Dropout(0.2))
 
     # second hidden layer with 20 neurons
-    model.add(Dense(10))
+    model.add(Dense(20))
     model.add(Activation('relu'))
     model.add(Dropout(0.2))
 
