@@ -12,6 +12,7 @@ np.random.seed(7)  # for reproducibility
 # load data, output matrices from tempotron
 # With 15 training images and 5 testing images
 # X_train should be 15*10 matrix, X_test should be 5*10 matrix
+# y_train should be 15*1 vector, y_test should be 5*1 vector
 (X_train, y_train), (X_test, y_test) = mnist.load_data()
 
 # Preprocess Input Matrices
@@ -23,21 +24,23 @@ max_voltage = 255 # need to change this number
 X_train = X_train / max_voltage
 X_test = X_test / max_voltage
 
-# one hot encode outputs
+# Y_train should be 15*10 one hot matrix (encoded outputs)
+# Y_test should be 5*10 one hot matrix (encoded outputs)
 Y_train = np_utils.to_categorical(y_train)
 Y_test = np_utils.to_categorical(y_test)
-num_classes = Y_test.shape[1] # 10
+num_classes = Y_test.shape[1]
 
 def keras_model():
     # create model
     model = Sequential()
+
     # first hidden layer with 20 neurons
     model.add(Dense(20, input_shape=(10,)))
     model.add(Activation('relu'))
     model.add(Dropout(0.2))
 
     # second hidden layer with 20 neurons
-    model.add(Dense(10))
+    model.add(Dense(20))
     model.add(Activation('relu'))
     model.add(Dropout(0.2))
 
