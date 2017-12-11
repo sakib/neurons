@@ -10,9 +10,9 @@ from keras.datasets import mnist
 np.random.seed(7)  # for reproducibility
 
 # load data, output matrices from tempotron
-# With 15 training images and 5 testing images
-# X_train should be 15*10 matrix, X_test should be 5*10 matrix
-# y_train should be 15*1 vector, y_test should be 5*1 vector
+# With 50 training images and 50 testing images
+# X_train should be 50*10 matrix, X_test should be 50*10 matrix
+# y_train should be 50*1 vector, y_test should be 50*1 vector
 (X_train, y_train), (X_test, y_test) = mnist.load_data()
 
 # Preprocess Input Matrices
@@ -24,8 +24,8 @@ max_voltage = 255 # need to change this number
 X_train = X_train / max_voltage
 X_test = X_test / max_voltage
 
-# Y_train should be 15*10 one hot matrix (encoded outputs)
-# Y_test should be 5*10 one hot matrix (encoded outputs)
+# Y_train should be 50*10 one hot matrix (encoded outputs)
+# Y_test should be 50*10 one hot matrix (encoded outputs)
 Y_train = np_utils.to_categorical(y_train)
 Y_test = np_utils.to_categorical(y_test)
 num_classes = Y_test.shape[1]
