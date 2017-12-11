@@ -2,7 +2,7 @@ import numpy as np
 from dataset import MNIST
 from digit_tempo import DigitTempotron
 
-RW = 'w' #'r'
+RW = 'r' #'w'
 
 class DigitTempotronLayer(object):
 	def __init__(self):
@@ -45,5 +45,4 @@ class DigitTempotronLayer(object):
 
 if __name__ == '__main__':
 	dtl = DigitTempotronLayer()
-	print(get_layer_output()[0])
-	print(get_layer_output()[1])
+	print(dtl.get_layer_output()[0]) # 50 x 10 matrix
