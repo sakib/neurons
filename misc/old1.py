@@ -24,7 +24,7 @@ def center_max(w):
 
 n_neurons = 9
 n_components = 25
-n_train_iters = 5
+n_train_iters = 10
 training_digit = 0
 false_digits = list(range(10))
 false_digits.remove(training_digit)
