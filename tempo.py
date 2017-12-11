@@ -31,7 +31,7 @@ def image_to_windows(image, n_neurons):
     return windows
 
 
-def matrix_to_windows(matrix, n_neurons):
+def old_matrix_to_windows(matrix, n_neurons):
     windows = []
     l_win = math.sqrt(n_neurons)
     n_windows = 1 + len(matrix) - int(l_win)
@@ -47,6 +47,31 @@ def matrix_to_windows(matrix, n_neurons):
     return windows
 
 
+def matrix_to_windows(matrix, n_neurons):
+    windows = []
+    #l_win = math.sqrt(n_neurons)
+    #n_windows = 1 + len(matrix) - int(l_win)
+    l_win = 3
+    n_windows = 8
+
+    if len(matrix) != len(matrix[0]): sys.exit('image must be square')
+    if l_win - int(l_win) != 0: sys.exit('perception must be square')
+    if n_windows <= 0: sys.exit('image must be larger than perception')
+
+    for r in range(n_windows):
+        for c in range(n_windows):
+            windows.append([row[c:c+int(l_win)] for row in matrix[r:r+int(l_win)]])
+
+    return windows
+
+
+def matrix_to_rows(matrix, n_neurons):
+    windows = []
+    for row in matrix:
+        windows.append(row)
+    return windows
+
+
 class Tempotron(object):
     def __init__(self, n_inputs):
         s = self
@@ -55,10 +80,13 @@ class Tempotron(object):
         s.t_threshold = 10  # time to wait for output to spike
         s.V_rest, s.V_th = 0, n_inputs
         s.neurons = [Neuron(i_neuron=i) for i in range(n_inputs)]
-
+        
         s.synapses = [random.uniform(-1, 1) for neuron in s.neurons]
-        while len(list(filter(lambda w: w < 0, s.synapses))) >= math.sqrt(n_inputs):
-            s.synapses = [random.uniform(-1, 1) for neuron in s.neurons] # limit inhibs
+        for i in range(len(s.neurons)):
+            if i >= math.sqrt(n_inputs):
+                s.synapses[i] = random.uniform(0, 1) # limit inhibs
+        #while len(list(filter(lambda w: w < 0, s.synapses))) >= math.sqrt(n_inputs):
+        #    s.synapses = [random.uniform(-1, 1) for neuron in s.neurons] # limit inhibs
 
 
     def tau(self, sign='none'): # > 1
@@ -69,7 +97,6 @@ class Tempotron(object):
     def weight_delta(self, neuron, t_max):
         if not neuron.has_spiked() or neuron.just_spiked(t_max): return 0
         psps = self.psp_kernels(neuron, t_max)
-        #print neuron.spikes, t_max
         if len(psps) == 0: return 0
         else: return self.lambduh * sum(psps) * 1./max(psps)
 
