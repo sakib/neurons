@@ -6,31 +6,34 @@ from keras.utils import np_utils
 from matplotlib import pyplot as plt
 from keras.datasets import mnist
 from tempo_layer import DigitTempotronLayer
+from dataset import MNIST
 
 
 np.random.seed(7)  # for reproducibility
 
 # load data, output matrices from tempotron
 # With 50 training images and 50 testing images
-# x_train should be 50*10 matrix, x_test should be 50*10 matrix
+# x_train should be 50*10*10 matrix, x_test should be 50*10*10 matrix
 # y_train should be 50*1 vector, y_test should be 50*1 vector
-#dtl = DigitTempotronLayer()
-#x_train = dtl.get_layer_output()[0]
-#x_test = x_train
-#y_train = dtl.get_layer_output()[1]
-#y_test = y_train
-(x_train, y_train), (x_test, y_test) = mnist.load_data()
-x_train = x_train.reshape(x_train.shape[0], 784)
-x_test = x_test.reshape(x_test.shape[0], 784)
+dtl = DigitTempotronLayer()
+y_train = dtl.get_layer_output()[1]
+y_test = y_train
+samples = []
+dataset = MNIST(n_components=100)
+for digit in range(10): # 0->9
+    for ten_by_ten_matrix in dataset.sample(5, digit, digit): # 5 x 'digit'
+        samples.append(ten_by_ten_matrix)
+samples = np.asarray(samples)
+samples = samples.reshape(50, 100)
 
 # Preprocess Input Matrices
-X_train = x_train.astype('float32')
-X_test = x_test.astype('float32')
+X_train = samples.astype('float32')
+X_test = samples.astype('float32')
 
 # normalize voltage inputs
-max_voltage = 255
-X_train = X_train / max_voltage
-X_test = X_test / max_voltage
+#max_voltage = 255
+#X_train = X_train / max_voltage
+#X_test = X_test / max_voltage
 
 # Y_train should be 50*10 one hot matrix (encoded outputs)
 # Y_test should be 50*10 one hot matrix (encoded outputs)
@@ -43,12 +46,17 @@ def keras_model():
     model = Sequential()
 
     # first hidden layer with 20 neurons
-    model.add(Dense(784, input_shape=(784,)))
+    model.add(Dense(100, input_shape=(100,)))
     model.add(Activation('relu'))
     model.add(Dropout(0.2))
 
     # second hidden layer with 20 neurons
-    model.add(Dense(784))
+    model.add(Dense(100))
+    model.add(Activation('relu'))
+    model.add(Dropout(0.2))
+
+    # third hidden layer with 20 neurons
+    model.add(Dense(100))
     model.add(Activation('relu'))
     model.add(Dropout(0.2))
 
@@ -63,7 +71,7 @@ def keras_model():
 # build the model
 model = keras_model()
 # Fit the model
-model.fit(X_train, Y_train, validation_data=(X_test, Y_test), epochs=10, batch_size=200, verbose=2)
+model.fit(X_train, Y_train, validation_data=(X_test, Y_test), epochs=25, batch_size=200, verbose=2)
 # Final evaluation of the model
 scores = model.evaluate(X_test, Y_test, verbose=0)
-print("Keras Model Error: %.2f%%" % (100-scores[1]*100))
+print("Baseline Model Error: %.2f%%" % (100-scores[1]*100))
