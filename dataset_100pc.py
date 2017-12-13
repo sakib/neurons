@@ -13,8 +13,8 @@ class MNIST(object):
 		pca = PCA(n_components=n_components)
 		X_transformed = pca.fit_transform(X_train)
 		sq_dims = lambda v: (int(sqrt(len(v))), int(sqrt(len(v))))
-		#self.data = [np.reshape(X, sq_dims(X)) for X in X_transformed]
-		self.data = [X for X in X_transformed]
+		self.data = [np.reshape(X, sq_dims(X)) for X in X_transformed]
+		#self.data = [X for X in X_transformed]
 
 	def sample(self, n_samples, label, superlabel):
 		samples = []

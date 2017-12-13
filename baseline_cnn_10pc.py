@@ -19,16 +19,22 @@ dtl = DigitTempotronLayer()
 y_train = dtl.get_layer_output()[1]
 y_test = y_train
 samples = []
-dataset = MNIST(n_components=100)
+dataset = MNIST(n_components=10)
+#for digit in range(10): # 0->9
+#    for ten_by_ten_matrix in dataset.sample(5, digit, digit): # 5 x 'digit'
+#        samples.append(ten_by_ten_matrix)
+#samples = np.asarray(samples)
+#samples = samples.reshape(50, 100)
+
 for digit in range(10): # 0->9
-    for ten_by_ten_matrix in dataset.sample(5, digit, digit): # 5 x 'digit'
-        samples.append(ten_by_ten_matrix)
+    for fifty_lengthten_vectors in dataset.sample(5, digit, digit): # 5 x 'digit'
+        samples.append(fifty_lengthten_vectors)
 samples = np.asarray(samples)
-samples = samples.reshape(50, 100)
 
 # Preprocess Input Matrices
 X_train = samples.astype('float32')
 X_test = samples.astype('float32')
+print X_train[0]
 
 # normalize voltage inputs
 #max_voltage = 255
@@ -46,7 +52,7 @@ def keras_model():
     model = Sequential()
 
     # first hidden layer with 20 neurons
-    model.add(Dense(100, input_shape=(100,)))
+    model.add(Dense(100, input_shape=(10,)))
     model.add(Activation('relu'))
     model.add(Dropout(0.2))
 
@@ -70,8 +76,36 @@ def keras_model():
 
 # build the model
 model = keras_model()
-# Fit the model
-model.fit(X_train, Y_train, validation_data=(X_test, Y_test), epochs=25, batch_size=200, verbose=2)
+
+# training the model and saving metrics in history
+history = model.fit(X_train, Y_train,
+          batch_size=200, epochs=50,
+          verbose=2,
+          validation_data=(X_test, Y_test))
+
+
+# plotting the metrics
+fig = plt.figure()
+plt.subplot(2,1,1)
+plt.plot(history.history['acc'])
+plt.plot(history.history['val_acc'])
+plt.title('model accuracy')
+plt.ylabel('accuracy')
+plt.xlabel('epoch')
+plt.legend(['train', 'test'], loc='lower right')
+
+plt.subplot(2,1,2)
+plt.plot(history.history['loss'])
+plt.plot(history.history['val_loss'])
+plt.title('model loss')
+plt.ylabel('loss')
+plt.xlabel('epoch')
+plt.legend(['train', 'test'], loc='upper right')
+
+plt.tight_layout()
+plt.show()
+
+
 # Final evaluation of the model
 scores = model.evaluate(X_test, Y_test, verbose=0)
 print("Baseline Model Error: %.2f%%" % (100-scores[1]*100))
