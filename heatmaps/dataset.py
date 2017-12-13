@@ -7,14 +7,14 @@ from sklearn.datasets import fetch_mldata
 RW = 'r' #'w'
 
 class MNIST(object):
-	def __init__(self, n_components=784):
+	def __init__(self, n_components=784, reshape=True):
 		mnist = fetch_mldata('MNIST original')
 		X_train, self.labels = mnist.data/255., mnist.target
 		pca = PCA(n_components=n_components)
 		X_transformed = pca.fit_transform(X_train)
 		sq_dims = lambda v: (int(sqrt(len(v))), int(sqrt(len(v))))
-		self.data = [np.reshape(X, sq_dims(X)) for X in X_transformed]
-		#self.data = [X for X in X_transformed]
+		if reshape: self.data = [np.reshape(X, sq_dims(X)) for X in X_transformed]
+		else: self.data = [X for X in X_transformed]
 
 	def sample(self, n_samples, label, superlabel):
 		samples = []

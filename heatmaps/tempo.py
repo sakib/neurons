@@ -47,6 +47,13 @@ def matrix_to_windows(matrix, n_neurons):
     return windows
 
 
+def matrix_to_rows(matrix, n_neurons):
+    windows = []
+    for row in matrix:
+        windows.append(row)
+    return windows
+
+
 class Tempotron(object):
     def __init__(self, n_inputs):
         s = self
@@ -60,6 +67,8 @@ class Tempotron(object):
         for i in range(len(s.neurons)):
             if i >= math.sqrt(n_inputs):
                 s.synapses[i] = random.uniform(0, 1) # limit inhibs
+        #while len(list(filter(lambda w: w < 0, s.synapses))) >= math.sqrt(n_inputs):
+        #    s.synapses = [random.uniform(-1, 1) for neuron in s.neurons] # limit inhibs
 
 
     def tau(self, sign='none'): # > 1
@@ -165,3 +174,66 @@ class Tempotron(object):
         avg = sum/(len(window) * len(window[0]))
 
         return avg >= 128
+
+"""
+if __name__ == '__main__':
+
+    # setup problem
+    tempotron = Tempotron(9)
+    problem = 'Line Detection'
+    images = defaultdict()
+    valid_angles = [0, 180]
+    n_training_iters = 5
+    GRAPH = True #False
+
+    # methods of feeding windows from inputs to neurons
+    switch_fns = defaultdict() # fns to convert window to bool
+    switch_fns['center'] = lambda w: w[len(w)/2][len(w)/2] in VALIDS
+    switch_fns['line'] = lambda w: all([c in VALIDS for c in w[len(w)/2]])
+
+    for name, switch_fn in switch_fns.items():
+        # basic info
+        print('\n{}\n{}'.format(problem, '-'*len(problem)))
+        print('detection method: {}'.format(name))
+        print('graphing: {}\n'.format('on' if GRAPH else 'off'))
+        for angle in range(0, 360, 20):
+            images[angle] = 'angle_{}'.format(angle)
+
+        # train tempotron
+        print('Training...')
+        start_time = time.time()
+        for i in range(n_training_iters):
+            for angle in range(0, 180, 20):
+                tempotron.train(images[angle], switch_fn, angle in valid_angles)
+        print('Avg time to train on all inputs: {}ms\n'.format(
+            round(1000*(time.time() - start_time)/n_training_iters, n_decimals=1)))
+
+        # output trained weights
+        print('Weights...')
+        tempotron.print_synapses()
+        print('')
+
+        # set valid truth time-to-first-spike threshold
+        truth, t_max, v_max = tempotron.classify(images[0], switch_fn)
+        tempotron.V_th = v_max
+
+        # classify input images
+        print('Classifying...'.format(v_max))
+        max_voltages = []
+        start_time = time.time()
+        for angle in range(0, 360, 20):
+            if not GRAPH: truth, t_max, v_max = tempotron.classify(images[angle], switch_fn)
+            else: truth, t_max, v_max = tempotron.classify(images[angle], switch_fn, plt)
+            print('Angle {}:\t{}\t{}'.format(angle, truth, v_max))
+            max_voltages.append(v_max)
+            if GRAPH:
+                plt.savefig('graphs/{}_{}.png'.format(name, angle))
+                plt.clf()
+        if GRAPH:
+            plt.plot([angle for angle in range(0, 360, 20)], max_voltages)
+            plt.savefig('graphs/{}.png'.format(name))
+            plt.clf()
+
+        print('\nTotal time to classify all inputs: {}ms\n'.format(
+            round(1000*(time.time() - start_time)/(360/20), n_decimals=1)))
+"""
