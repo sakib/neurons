@@ -16,19 +16,13 @@ np.random.seed(7)  # for reproducibility
 # x_train should be 50*10*10 matrix, x_test should be 50*10*10 matrix
 # y_train should be 50*1 vector, y_test should be 50*1 vector
 dtl = DigitTempotronLayer()
-y_train = dtl.get_layer_output()[1]
-y_test = y_train
+y_train, y_test = [dtl.get_layer_output()[1] for i in range(2)]
 samples = []
 dataset = MNIST(n_components=10)
-#for digit in range(10): # 0->9
-#    for ten_by_ten_matrix in dataset.sample(5, digit, digit): # 5 x 'digit'
-#        samples.append(ten_by_ten_matrix)
-#samples = np.asarray(samples)
-#samples = samples.reshape(50, 100)
 
 for digit in range(10): # 0->9
-    for fifty_lengthten_vectors in dataset.sample(5, digit, digit): # 5 x 'digit'
-        samples.append(fifty_lengthten_vectors)
+    for vector in dataset.sample(5, digit, digit): # 5 x 'digit'
+        samples.append(vector)
 samples = np.asarray(samples)
 
 # Preprocess Input Matrices
