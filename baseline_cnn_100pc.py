@@ -108,4 +108,4 @@ plt.show()
 
 # Final evaluation of the model
 scores = model.evaluate(X_test, Y_test, verbose=0)
-print("Baseline Model Error: %.2f%%" % (100-scores[1]*100))
+print("Baseline Model (100 PC) Error: %.2f%%" % (100-scores[1]*100))
