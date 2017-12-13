@@ -6,7 +6,7 @@ from keras.utils import np_utils
 from matplotlib import pyplot as plt
 from keras.datasets import mnist
 from tempo_layer import DigitTempotronLayer
-from dataset_100pc import MNIST
+from dataset import MNIST
 
 
 np.random.seed(7)  # for reproducibility
@@ -16,25 +16,19 @@ np.random.seed(7)  # for reproducibility
 # x_train should be 50*10*10 matrix, x_test should be 50*10*10 matrix
 # y_train should be 50*1 vector, y_test should be 50*1 vector
 dtl = DigitTempotronLayer()
-y_train = dtl.get_layer_output()[1]
-y_test = y_train
+y_train, y_test = [dtl.get_layer_output()[1] for i in range(2)]
 samples = []
-dataset = MNIST(n_components=100)
+dataset = MNIST(n_components=100, reshape=False)
 for digit in range(10): # 0->9
     for ten_by_ten_matrix in dataset.sample(5, digit, digit): # 5 x 'digit'
         samples.append(ten_by_ten_matrix)
 samples = np.asarray(samples)
 samples = samples.reshape(50, 100)
 
-#for digit in range(10): # 0->9
-#    for fifty_lengthten_vectors in dataset.sample(5, digit, digit): # 5 x 'digit'
-#        samples.append(fifty_lengthten_vectors)
-#samples = np.asarray(samples)
-
 # Preprocess Input Matrices
 X_train = samples.astype('float32')
 X_test = samples.astype('float32')
-print X_train[0]
+print(X_train[0])
 
 # normalize voltage inputs
 #max_voltage = 255
