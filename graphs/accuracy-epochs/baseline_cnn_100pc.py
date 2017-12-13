@@ -11,15 +11,14 @@ from dataset import MNIST
 
 np.random.seed(7)  # for reproducibility
 
+# load data, output matrices from tempotron
 # With 50 training images and 50 testing images
 # x_train should be 50*10*10 matrix, x_test should be 50*10*10 matrix
 # y_train should be 50*1 vector, y_test should be 50*1 vector
-
 dtl = DigitTempotronLayer()
-dataset = MNIST(n_components=100, reshape=False)
-
 y_train, y_test = [dtl.get_layer_output()[1] for i in range(2)]
 samples = []
+dataset = MNIST(n_components=100, reshape=False)
 for digit in range(10): # 0->9
     for ten_by_ten_matrix in dataset.sample(5, digit, digit): # 5 x 'digit'
         samples.append(ten_by_ten_matrix)
@@ -27,7 +26,14 @@ samples = np.asarray(samples)
 samples = samples.reshape(50, 100)
 
 # Preprocess Input Matrices
-X_train, X_test = [samples.astype('float32') for i in range(2)]
+X_train = samples.astype('float32')
+X_test = samples.astype('float32')
+print(X_train[0])
+
+# normalize voltage inputs
+#max_voltage = 255
+#X_train = X_train / max_voltage
+#X_test = X_test / max_voltage
 
 # Y_train should be 50*10 one hot matrix (encoded outputs)
 # Y_test should be 50*10 one hot matrix (encoded outputs)
@@ -68,7 +74,7 @@ model = keras_model()
 # training the model and saving metrics in history
 history = model.fit(X_train, Y_train,
           batch_size=200, epochs=50,
-          verbose=1,
+          verbose=2,
           validation_data=(X_test, Y_test))
 
 

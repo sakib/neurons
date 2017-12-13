@@ -43,7 +43,7 @@ def keras_model():
     model.add(Dropout(0.2))
 
     # second hidden layer with 20 neurons
-    model.add(Dense(100))
+    model.add(Dense(1000))
     model.add(Activation('relu'))
     model.add(Dropout(0.2))
 
@@ -71,21 +71,12 @@ history = model.fit(X_train, Y_train,
 
 # plotting the metrics
 fig = plt.figure()
-plt.subplot(2,1,1)
 plt.plot(history.history['acc'])
 plt.plot(history.history['val_acc'])
-plt.title('model accuracy')
+plt.title('model accuracy (over 50 epochs)')
 plt.ylabel('accuracy')
 plt.xlabel('epoch')
 plt.legend(['train', 'test'], loc='lower right')
-
-plt.subplot(2,1,2)
-plt.plot(history.history['loss'])
-plt.plot(history.history['val_loss'])
-plt.title('model loss')
-plt.ylabel('loss')
-plt.xlabel('epoch')
-plt.legend(['train', 'test'], loc='upper right')
 
 plt.tight_layout()
 plt.show()
@@ -93,4 +84,4 @@ plt.show()
 
 # Final evaluation of the model
 scores = model.evaluate(X_test, Y_test, verbose=0)
-print("Baseline Model Error: %.2f%%" % (100-scores[1]*100))
+print("Baseline Model (10 PCgit status) Error: %.2f%%" % (100-scores[1]*100))
