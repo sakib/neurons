@@ -42,6 +42,13 @@ class DigitTempotronLayer(object):
 	def get_layer_output(self):
 		return self.X_train, self.y_train
 
+	def classify(self, img_vector): # of length 100
+		output = []
+		for t in range(10):
+			truth, t_max, voltage = self.tempotrons[t].classify(img_vector.reshape(10, 10))
+			#print('\ttempotron {} classifies as:\t{}\t{}'.format(t, truth, voltage))
+			output.append(voltage)
+		return output
 
 if __name__ == '__main__':
 	dtl = DigitTempotronLayer()

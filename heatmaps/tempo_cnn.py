@@ -26,7 +26,7 @@ Y_train = np_utils.to_categorical(y_train) # 50*10 one hot matrix (encoded outpu
 # Testing data
 y_test = y_train
 x_test = x_train
-"""
+
 new_x = []
 for digit in range(10): # 0->9
     for vector in dataset.new_sample(1, digit):
@@ -35,7 +35,7 @@ for digit in range(10): # 0->9
         new_x.append(voltages)
         y_test = np.append(y_test, [digit])
 x_test = np.append(x_test, np.asarray(new_x)).reshape(len(x_test)+len(new_x), 10)
-"""
+
 X_test = x_test.astype('float32') / max_voltage
 Y_test = np_utils.to_categorical(y_test)
 

@@ -61,7 +61,6 @@ def keras_model(n_hidden_layers, n_neurons):
 
 a = np.zeros((5, 10))
 
-#for batch_size in [5, 10, 25, 50]:
 for batch_size in [5, 50]:
     for n_hidden_layers in range(1, 6): # 1->5
         for n_neurons in range(10, 110, 10): # 10->100
@@ -77,6 +76,7 @@ for batch_size in [5, 50]:
                 n_neurons, a[n_hidden_layers-1][int(n_neurons/10)-1]))
 
     plt.imshow(a, cmap=mpl.cm.get_cmap('Reds'), extent=[-0.5, 9.5, 0.5, 5.5])
+    plt.clim(vmin=0., vmax=1.)
     plt.title('Accuracy of Base CNN, 10 PCs, batch {}'.format(batch_size))
     plt.ylabel('n_hidden_layers')
     plt.yticks(np.arange(1, 6, 1))
