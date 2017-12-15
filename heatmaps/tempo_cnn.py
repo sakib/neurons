@@ -38,6 +38,40 @@ X_test = X_test / max_voltage
 Y_train = np_utils.to_categorical(y_train)
 Y_test = np_utils.to_categorical(y_test)
 num_classes = Y_test.shape[1]
+"""
+# With 50 training images and 50 testing images
+# x_train should be 50*10*10 matrix, x_test should be 50*10*10 matrix
+# y_train should be 50*1 vector, y_test should be 50*1 vector
+dtl = DigitTempotronLayer()
+dataset = MNIST(n_components=100, reshape=False)
+np.random.seed(7)  # for reproducibility
+
+# Training data
+train_samples = []
+for digit in range(10): # 0->9
+    for ten_by_ten_matrix in dataset.sample(5, digit, digit): # 5 x 'digit'
+        train_samples.append(ten_by_ten_matrix)
+train_samples = np.asarray(train_samples).reshape(50, 100)
+X_train = train_samples.astype('float32')
+y_train = dtl.get_layer_output()[1]
+Y_train = np_utils.to_categorical(y_train) # 50*10 one hot matrix (encoded outputs)
+
+# Testing data
+i = 0
+test_samples = []
+y_test = np.zeros((50, 1))
+for digit in range(10): # 0->9
+    for ten_by_ten_matrix in dataset.new_sample(5, digit):
+        test_samples.append(ten_by_ten_matrix)
+        y_test[i] = digit
+        i += 1
+test_samples = np.asarray(test_samples).reshape(50, 100)
+X_test = test_samples.astype('float32')
+Y_test = np_utils.to_categorical(y_test) # 50*10 one hot matrix (encoded outputs)
+num_classes = Y_test.shape[1]
+
+"""
+
 
 def keras_model(n_hidden_layers, n_neurons):
     # create model
@@ -59,7 +93,8 @@ def keras_model(n_hidden_layers, n_neurons):
 
 a = np.zeros((5, 10))
 
-for batch_size in [5, 10, 25, 50]:
+#for batch_size in [5, 10, 25, 50]:
+for batch_size in [5, 50]:
     for n_hidden_layers in range(1, 6): # 1->5
         for n_neurons in range(100, 1100, 100): # 100->1000
             # build the model
@@ -68,9 +103,9 @@ for batch_size in [5, 10, 25, 50]:
             history = model.fit(X_train, Y_train,
                       batch_size=batch_size, epochs=50, verbose=0,
                       validation_data=(X_test, Y_test))
-            
+
             a[n_hidden_layers-1][int(n_neurons/100)-1] = model.evaluate(X_test, Y_test, verbose=0)[1]
-            print('bs: {}\th: {}\tn: {}\tacc: {}'.format(batch_size, n_hidden_layers, 
+            print('bs: {}\th: {}\tn: {}\tacc: {}'.format(batch_size, n_hidden_layers,
                 n_neurons, a[n_hidden_layers-1][int(n_neurons/100)-1]))
 
     plt.imshow(a, cmap=mpl.cm.get_cmap('Reds'), extent=[-0.5, 9.5, 0.5, 5.5])

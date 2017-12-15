@@ -8,38 +8,37 @@ from keras.datasets import mnist
 from tempo_layer import DigitTempotronLayer
 from dataset import MNIST
 
-
-np.random.seed(7)  # for reproducibility
-
-# load data, output matrices from tempotron
 # With 50 training images and 50 testing images
 # x_train should be 50*10*10 matrix, x_test should be 50*10*10 matrix
 # y_train should be 50*1 vector, y_test should be 50*1 vector
 dtl = DigitTempotronLayer()
-y_train, y_test = [dtl.get_layer_output()[1] for i in range(2)]
-samples = []
 dataset = MNIST(n_components=10)
+np.random.seed(7)  # for reproducibility
 
+# Training data
+train_samples = []
 for digit in range(10): # 0->9
-    for vector in dataset.sample(5, digit, digit): # 5 x 'digit'
-        samples.append(vector)
-samples = np.asarray(samples)
+    for ten_by_ten_matrix in dataset.sample(5, digit, digit): # 5 x 'digit'
+        train_samples.append(ten_by_ten_matrix)
+train_samples = np.asarray(train_samples).reshape(50, 10)
+X_train = train_samples.astype('float32')
+y_train = dtl.get_layer_output()[1]
+Y_train = np_utils.to_categorical(y_train) # 50*10 one hot matrix (encoded outputs)
 
-# Preprocess Input Matrices
-X_train = samples.astype('float32')
-X_test = samples.astype('float32')
-print X_train[0]
-
-# normalize voltage inputs
-#max_voltage = 255
-#X_train = X_train / max_voltage
-#X_test = X_test / max_voltage
-
-# Y_train should be 50*10 one hot matrix (encoded outputs)
-# Y_test should be 50*10 one hot matrix (encoded outputs)
-Y_train = np_utils.to_categorical(y_train)
-Y_test = np_utils.to_categorical(y_test)
+# Testing data
+i = 0
+test_samples = []
+y_test = np.zeros((50, 1))
+for digit in range(10): # 0->9
+    for ten_by_ten_matrix in dataset.new_sample(5, digit):
+        test_samples.append(ten_by_ten_matrix)
+        y_test[i] = digit
+        i += 1
+test_samples = np.asarray(test_samples).reshape(50, 10)
+X_test = test_samples.astype('float32')
+Y_test = np_utils.to_categorical(y_test) # 50*10 one hot matrix (encoded outputs)
 num_classes = Y_test.shape[1]
+
 
 def keras_model():
     # create model
@@ -73,7 +72,7 @@ model = keras_model()
 
 # training the model and saving metrics in history
 history = model.fit(X_train, Y_train,
-          batch_size=200, epochs=50,
+          batch_size=50, epochs=50,
           verbose=2,
           validation_data=(X_test, Y_test))
 
@@ -82,7 +81,7 @@ history = model.fit(X_train, Y_train,
 fig = plt.figure()
 plt.plot(history.history['acc'])
 plt.plot(history.history['val_acc'])
-plt.title('model accuracy (over 50 epochs)')
+plt.title('Baseline (10 PC) model accuracy')
 plt.ylabel('accuracy')
 plt.xlabel('epoch')
 plt.legend(['train', 'test'], loc='lower right')
@@ -93,4 +92,4 @@ plt.show()
 
 # Final evaluation of the model
 scores = model.evaluate(X_test, Y_test, verbose=0)
-print("Baseline Model (10 PCgit status) Error: %.2f%%" % (100-scores[1]*100))
+print("Baseline Model (10 PC) Error: %.2f%%" % (100-scores[1]*100))

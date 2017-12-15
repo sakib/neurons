@@ -36,9 +36,9 @@ class DigitTempotronLayer(object):
 				for j in range(n_samples*10):
 					y_train[j] = int(j/n_samples)
 
-			self.X_train, self.y_train = X_train, y_train
-			self.tempotrons = tempotrons
-
+		self.tempotrons = tempotrons
+		self.X_train, self.y_train = X_train, y_train
+	
 	def get_layer_output(self):
 		return self.X_train, self.y_train
 

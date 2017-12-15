@@ -30,10 +30,10 @@ class MNIST(object):
 				samples = [self.data[int(idx)] for idx in idxs]
 		return samples[:(n_samples if label == superlabel else 1)]
 
-    def new_sample(self, n_samples, label):
-        samples = []
-        while len(samples) != n_samples:
-            idx = randint(0, len(self.data))
-            if self.labels[idx] == label:
-                samples.append(self.data[idx])
-        return samples
+	def new_sample(self, n_samples, label):
+		samples = []
+		while len(samples) != n_samples:
+			idx = randint(0, len(self.data))
+			if self.labels[idx] == label:
+				samples.append(self.data[idx])
+		return samples
