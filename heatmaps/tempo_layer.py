@@ -18,7 +18,7 @@ class DigitTempotronLayer(object):
 		X_train, y_train = np.zeros((n_samples*10, 10)), np.zeros((n_samples*10, 1))
 
 		# classification phase
-		with open('X_train.txt', 'r+') as f:
+        with open('X_train.txt', 'r+') as f:
 			if RW == 'w':
 				for i in range(n_samples*10):
 					images = dataset.sample(n_samples, int(i/n_samples), int(i/n_samples)) # five sample vectors, each one of 0->9
