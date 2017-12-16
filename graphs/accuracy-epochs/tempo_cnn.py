@@ -1,5 +1,4 @@
 import numpy as np
-from copy import deepcopy
 from keras.models import Sequential  # Keras Model
 from keras.layers import Dense, Dropout, Activation, Flatten  # Keras Layers
 from keras.layers import Convolution2D, MaxPooling2D  # Keras CNN Layers
@@ -23,8 +22,8 @@ X_train = x_train.astype('float32') / max_voltage # normalize
 Y_train = np_utils.to_categorical(y_train) # 50*10 one hot matrix (encoded outputs)
 
 # Testing data
-y_test = deepcopy(y_train)
-x_test = deepcopy(x_train)
+y_test = np.array(y_train, copy=True)
+x_test = np.array(x_train, copy=True)
 
 new_x = []
 for digit in range(10): # 0->9
