@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib as mpl
+from copy import deepcopy
 from keras.models import Sequential  # Keras Model
 from keras.layers import Dense, Dropout, Activation, Flatten  # Keras Layers
 from keras.layers import Convolution2D, MaxPooling2D  # Keras CNN Layers
@@ -24,13 +25,13 @@ X_train = x_train.astype('float32') / max_voltage # normalize
 Y_train = np_utils.to_categorical(y_train) # 50*10 one hot matrix (encoded outputs)
 
 # Testing data
-y_test = y_train
-x_test = x_train
+y_test = deepcopy(y_train)
+x_test = deepcopy(x_train)
 
 new_x = []
 for digit in range(10): # 0->9
-    for vector in dataset.new_sample(1, digit):
-        #print('cock {}'.format(digit))
+    for vector in dataset.new_sample(3, digit):
+        print('cock {}'.format(digit))
         voltages = dtl.classify(vector) # output of tempotron layer, list len 10
         new_x.append(voltages)
         y_test = np.append(y_test, [digit])
@@ -59,29 +60,29 @@ def keras_model(n_hidden_layers, n_neurons):
     return model
 
 a = np.zeros((5, 10))
-scale = 10
+#scale = 100
+for scale in [10, 100]:
+    for batch_size in [5, 50]:
+        for n_hidden_layers in range(1, 6): # 1->5
+            #for n_neurons in range(100, 1100, 100): # 100->1000
+            for n_neurons in range(scale, scale*10+1, scale): # 10->100
+                # build the model
+                model = keras_model(n_hidden_layers, n_neurons)
+                # training the model and saving metrics in history
+                history = model.fit(X_train, Y_train,
+                          batch_size=batch_size, epochs=50, verbose=0,
+                          validation_data=(X_test, Y_test))
 
-for batch_size in [5, 50]:
-    for n_hidden_layers in range(1, 6): # 1->5
-        #for n_neurons in range(100, 1100, 100): # 100->1000
-        for n_neurons in range(scale, scale**2+scale, scale): # 10->100
-            # build the model
-            model = keras_model(n_hidden_layers, n_neurons)
-            # training the model and saving metrics in history
-            history = model.fit(X_train, Y_train,
-                      batch_size=batch_size, epochs=50, verbose=0,
-                      validation_data=(X_test, Y_test))
+                a[n_hidden_layers-1][int(n_neurons/scale)-1] = model.evaluate(X_test, Y_test, verbose=0)[1]
+                print('bs: {}\th: {}\tn: {}\tacc: {}'.format(batch_size, n_hidden_layers,
+                    n_neurons, a[n_hidden_layers-1][int(n_neurons/scale)-1]))
 
-            a[n_hidden_layers-1][int(n_neurons/scale)-1] = model.evaluate(X_test, Y_test, verbose=0)[1]
-            print('bs: {}\th: {}\tn: {}\tacc: {}'.format(batch_size, n_hidden_layers,
-                n_neurons, a[n_hidden_layers-1][int(n_neurons/scale)-1]))
-
-    plt.imshow(a, cmap=mpl.cm.get_cmap('Reds'), extent=[-0.5, 9.5, 0.5, 5.5])
-    plt.clim(vmin=0., vmax=1.)
-    plt.title('Accuracy of Tempotron CNN, batch {}'.format(batch_size))
-    plt.ylabel('n_hidden_layers')
-    plt.yticks(np.arange(1, 6, 1))
-    plt.xlabel('n_neurons')
-    plt.xticks(np.arange(10), (scale*(x+1) for x in range(10)))
-    plt.colorbar()
-    plt.show()
+        plt.imshow(a, cmap=mpl.cm.get_cmap('Reds'), extent=[-0.5, 9.5, 0.5, 5.5])
+        plt.clim(vmin=0., vmax=1.)
+        plt.title('Accuracy of Tempotron CNN, batch {}'.format(batch_size))
+        plt.ylabel('n_hidden_layers')
+        plt.yticks(np.arange(1, 6, 1))
+        plt.xlabel('n_neurons')
+        plt.xticks(np.arange(10), (scale*(x+1) for x in range(10)))
+        plt.colorbar()
+        plt.show()
