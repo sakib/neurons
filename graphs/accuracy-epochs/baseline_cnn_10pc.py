@@ -12,7 +12,7 @@ from dataset import MNIST
 # x_train should be 50*10*10 matrix, x_test should be 50*10*10 matrix
 # y_train should be 50*1 vector, y_test should be 50*1 vector
 dtl = DigitTempotronLayer()
-dataset = MNIST(n_components=10)
+dataset = MNIST(n_components=10, reshape=False)
 np.random.seed(7)  # for reproducibility
 
 # Training data
@@ -72,7 +72,7 @@ model = keras_model()
 
 # training the model and saving metrics in history
 history = model.fit(X_train, Y_train,
-          batch_size=50, epochs=50,
+          batch_size=5, epochs=50,
           verbose=2,
           validation_data=(X_test, Y_test))
 
@@ -81,7 +81,7 @@ history = model.fit(X_train, Y_train,
 fig = plt.figure()
 plt.plot(history.history['acc'])
 plt.plot(history.history['val_acc'])
-plt.title('Baseline (10 PC) model accuracy')
+plt.title('Base CNN (10 PC) model accuracy, batch 5')
 plt.ylabel('accuracy')
 plt.xlabel('epoch')
 plt.legend(['train', 'test'], loc='lower right')

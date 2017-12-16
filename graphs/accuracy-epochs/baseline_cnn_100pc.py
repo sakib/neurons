@@ -81,7 +81,7 @@ history = model.fit(X_train, Y_train,
 fig = plt.figure()
 plt.plot(history.history['acc'])
 plt.plot(history.history['val_acc'])
-plt.title('Baseline (100 PC) model accuracy')
+plt.title('Base CNN (100 PC) model accuracy, batch 50')
 plt.ylabel('accuracy')
 plt.xlabel('epoch')
 plt.legend(['train', 'test'], loc='lower right')

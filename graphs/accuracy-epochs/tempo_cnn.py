@@ -1,13 +1,45 @@
 import numpy as np
+from copy import deepcopy
 from keras.models import Sequential  # Keras Model
 from keras.layers import Dense, Dropout, Activation, Flatten  # Keras Layers
 from keras.layers import Convolution2D, MaxPooling2D  # Keras CNN Layers
 from keras.utils import np_utils
 from matplotlib import pyplot as plt
 from keras.datasets import mnist
+from dataset import MNIST
 from tempo_layer import DigitTempotronLayer
 
+# With 50 training images and 50 testing images
+# x_train should be 50*10*10 matrix, x_test should be 50*10*10 matrix
+# y_train should be 50*1 vector, y_test should be 50*1 vector
+dtl = DigitTempotronLayer()
+dataset = MNIST(n_components=100, reshape=False)
+np.random.seed(7)  # for reproducibility
+max_voltage = 64
 
+# Training data
+x_train, y_train = dtl.get_layer_output()
+X_train = x_train.astype('float32') / max_voltage # normalize
+Y_train = np_utils.to_categorical(y_train) # 50*10 one hot matrix (encoded outputs)
+
+# Testing data
+y_test = deepcopy(y_train)
+x_test = deepcopy(x_train)
+
+new_x = []
+for digit in range(10): # 0->9
+    for vector in dataset.new_sample(1, digit):
+        print('cock {}'.format(digit))
+        voltages = dtl.classify(vector) # output of tempotron layer, list len 10
+        new_x.append(voltages)
+        y_test = np.append(y_test, [digit])
+x_test = np.append(x_test, np.asarray(new_x)).reshape(len(x_test)+len(new_x), 10)
+
+X_test = x_test.astype('float32') / max_voltage
+Y_test = np_utils.to_categorical(y_test)
+
+
+"""
 np.random.seed(7)  # for reproducibility
 
 # load data, output matrices from tempotron
@@ -35,7 +67,7 @@ Y_train = np_utils.to_categorical(y_train)
 Y_test = np_utils.to_categorical(y_test)
 num_classes = Y_test.shape[1]
 
-"""
+
 # With 50 training images and 50 testing images
 # x_train should be 50*10*10 matrix, x_test should be 50*10*10 matrix
 # y_train should be 50*1 vector, y_test should be 50*1 vector
@@ -101,7 +133,7 @@ model = keras_model()
 
 # training the model and saving metrics in history
 history = model.fit(X_train, Y_train,
-          batch_size=5, epochs=50,
+          batch_size=50, epochs=50,
           verbose=2,
           validation_data=(X_test, Y_test))
 
@@ -109,9 +141,10 @@ history = model.fit(X_train, Y_train,
 fig = plt.figure()
 plt.plot(history.history['acc'])
 plt.plot(history.history['val_acc'])
-plt.title('Tempo_CNN model accuracy')
+plt.title('Tempo_CNN model accuracy, batch 50')
 plt.ylabel('accuracy')
 plt.xlabel('epoch')
+plt.ylim(0.0, 1.0)
 plt.legend(['train', 'test'], loc='lower right')
 
 plt.tight_layout()

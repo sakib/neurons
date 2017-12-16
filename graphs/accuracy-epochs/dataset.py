@@ -15,7 +15,9 @@ class MNIST(object):
 		sq_dims = lambda v: (int(sqrt(len(v))), int(sqrt(len(v))))
 		#if reshape: self.data = [np.reshape(X, sq_dims(X)) for X in X_transformed]
 		#else: self.data = [X for X in X_transformed]
-		self.data = [X for X in X_transformed]
+		#self.data = [X for X in X_transformed]
+		if reshape: self.data = [np.reshape(X, sq_dims(X)) for X in X_transformed]
+		else: self.data = [X for X in X_transformed]
 
 	def sample(self, n_samples, label, superlabel):
 		samples = []
